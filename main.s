@@ -2,7 +2,7 @@
 
 extrn	UART_Setup, UART_Transmit_Message  ; external subroutines
 extrn	LCD_Setup, LCD_Write_Message
-	
+extrn LCD_Send_Byte_I, LCD_Send_Byte_D	
 psect	udata_acs   ; reserve data space in access ram
 counter:    ds 1    ; reserve one byte for a counter variable
 delay_count:ds 1    ; reserve one byte for counter in the delay routine
@@ -29,6 +29,7 @@ setup:	bcf	CFGS	; point to Flash program memory
 	call	LCD_Setup	; setup UART
 	goto	start
 	
+	
 	; ******* Main programme ****************************************
 start: 	lfsr	0, myArray	; Load FSR0 with address in RAM	
 	movlw	low highword(myTable)	; address of data in PM
@@ -47,14 +48,17 @@ loop: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
 	movlw	myTable_l	; output message to UART
 	lfsr	2, myArray
 	call	UART_Transmit_Message
-
+	btfsc	PORTD, 0
+	goto    clear
 	movlw	myTable_l	; output message to LCD
 	addlw	0xff		; don't send the final carriage return to LCD
 	lfsr	2, myArray
 	call	LCD_Write_Message
-
 	goto	$		; goto current line in code
-
+	
+clear:
+        movlw    00000001B       ; LCD clear command
+	call     LCD_Send_Byte_I
 	; a delay subroutine if you need one, times around loop in delay_count
 delay:	decfsz	delay_count, A	; decrement until zero
 	bra	delay

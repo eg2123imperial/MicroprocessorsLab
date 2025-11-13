@@ -28,7 +28,7 @@ setup:	bcf	CFGS	; point to Flash program memory
 	call	UART_Setup	; setup UART
 	call	LCD_Setup	; setup UART
 	goto	start
-	
+	goto	start
 	
 	; ******* Main programme ****************************************
 start: 	lfsr	0, myArray	; Load FSR0 with address in RAM	
@@ -48,20 +48,24 @@ loop: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
 	movlw	myTable_l	; output message to UART
 	lfsr	2, myArray
 	call	UART_Transmit_Message
-	btfsc	PORTD, 0
-	goto    clear
 	movlw	myTable_l	; output message to LCD
 	addlw	0xff		; don't send the final carriage return to LCD
 	lfsr	2, myArray
 	call	LCD_Write_Message
+	call	clear_loop
 	goto	$		; goto current line in code
-	
-clear:
-        movlw    00000001B       ; LCD clear command
-	call     LCD_Send_Byte_I
+
+clear_loop:
+	btfss	PORTD, 0
+	bra	clear_loop
+	call	clear
 	; a delay subroutine if you need one, times around loop in delay_count
 delay:	decfsz	delay_count, A	; decrement until zero
 	bra	delay
 	return
-
+clear:
+        movlw    00000001B       ; LCD clear command
+	call     LCD_Send_Byte_I
+	return
+	
 	end	rst
